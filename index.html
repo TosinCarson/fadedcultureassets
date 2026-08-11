@@ -601,7 +601,41 @@ dl.facts dd a:hover{border-bottom-color:var(--accent)}
 @keyframes splashGlow{from{opacity:0}to{opacity:1}}
 
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ── client demo build ──────────────────────────
+   Presentation-only. Deleting this block, the two .wm- divs in the markup, and the
+   early return in save() puts the file back to the live build. Nothing above is
+   modified by any of it. */
+.btn.demo-locked,.btn.demo-locked:hover{
+  opacity:.45;cursor:not-allowed;
+  background:var(--accent);border-color:var(--accent);
+}
+.demo-note{
+  padding:0 26px 16px;background:var(--surface);
+  font-size:11.5px;line-height:1.5;color:var(--faint);
+}
+/* Sits above the panel (70) and the splash (200) so it is never covered. */
+.wm-corner{
+  position:fixed;right:16px;bottom:13px;z-index:9999;pointer-events:none;
+  font-size:9.5px;letter-spacing:.24em;text-transform:uppercase;
+  color:var(--muted);opacity:.55;
+}
+/* Repeating PREVIEW across each thumbnail, the way a stock library marks a comp.
+   ::after is the last thing painted inside the tile, so it sits over the image, and
+   it inherits the tile's overflow:hidden so the pattern clips to the frame. The
+   thumbnail hover push-in moves the img underneath, not this. */
+.thumb::after,.panel-thumb::after{
+  content:'';position:absolute;inset:0;pointer-events:none;opacity:.3;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='88'%3E%3Ctext x='0' y='60' font-family='Helvetica,Arial,sans-serif' font-size='15' font-weight='700' letter-spacing='3' fill='%23ffffff' transform='rotate(-30 0 60)'%3EPREVIEW%3C/text%3E%3C/svg%3E");
+}
+@media print{
+  /* backgrounds are dropped when printing unless this is asked for explicitly */
+  .thumb::after,.panel-thumb::after{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .wm-corner{opacity:.7;color:#000}
+}
 </style>
+
+<div class="wm-corner" aria-hidden="true">PREVIEW — Designed by Tosin</div>
 
 <div id="splash" role="status" aria-label="Loading">
   <div class="splash-inner">
@@ -8463,9 +8497,12 @@ function showForm(id){
         .map(c=>`<option value="${esc(c)}">`).join('')}</datalist>
     </div>
     <div class="panel-ft">
-      <button class="btn" data-save="${isNew?'':esc(a.id)}">${isNew?'Add to library':'Save changes'}</button>
+      ${isNew
+        ? `<button class="btn demo-locked" disabled aria-disabled="true">Available in the full build</button>`
+        : `<button class="btn" data-save="${esc(a.id)}">Save changes</button>`}
       <button class="btn ghost" data-close>Cancel</button>
-    </div>`);
+    </div>
+    ${isNew ? `<p class="demo-note">Adding assets is enabled when your library goes live.</p>` : ''}`);
   if(isNew){
     const upd = () => $('#idPrev').textContent = nextId($('#f_prefix').value);
     $('#f_prefix').addEventListener('change', upd); upd();
@@ -8476,6 +8513,10 @@ function toast(msg){
   clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('on'),2600);
 }
 async function save(existingId){
+  /* Demo build: adding new assets is switched off. Guarded here as well as on the
+     button, so stripping the disabled attribute in dev tools still cannot write a
+     record. Editing an existing asset is untouched. */
+  if(!existingId) return;
   const title = $('#f_title').value.trim();
   if(!title){ $('#e_title').classList.add('on'); $('#f_title').focus(); return; }
   const id = existingId || nextId($('#f_prefix').value);
