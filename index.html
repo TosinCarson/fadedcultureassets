@@ -238,31 +238,35 @@ select.sort{
 .share{grid-column:2/4;height:1px;background:var(--line-soft);margin-top:-2px;position:relative}
 .share i{position:absolute;inset:0 auto 0 0;background:var(--accent-soft);display:block}
 
-/* source list — where an asset physically lives */
-.sources{display:flex;flex-direction:column;gap:1px}
-.src-row{
-  display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;
-  padding:7px 8px;width:100%;text-align:left;cursor:pointer;
-  background:none;border:1px solid transparent;border-radius:2px;
-  transition:background .15s,border-color .15s;
+/* source tabs — where an asset physically lives. One at a time, never combined. */
+.srctabs{
+  display:flex;gap:2px;align-items:center;
+  overflow-x:auto;overflow-y:hidden;scrollbar-width:none;
+  border-bottom:1px solid var(--line-soft);
+  padding:4px 0 0;
+  /* Without this the strip's full laid-out width becomes the column's minimum,
+     since a flex item defaults to min-width:auto. The column would then push past
+     the viewport and overflow-x:auto here would never engage. */
+  min-width:0;
 }
-.src-row .code{
-  font-family:var(--mono);font-size:9px;letter-spacing:.06em;color:var(--faint);
-  border:1px solid var(--line);border-radius:2px;padding:2px 4px;
+.srctabs::-webkit-scrollbar{display:none}
+.src-tab{
+  display:inline-flex;align-items:baseline;gap:7px;flex:none;
+  padding:7px 12px 9px;cursor:pointer;white-space:nowrap;
+  background:none;border:none;border-bottom:2px solid transparent;
+  color:var(--muted);font-size:12.5px;
+  transition:color .15s,border-color .15s;
 }
-.src-row .nm{font-size:12.5px;color:var(--muted);transition:color .15s}
-.src-row .ct{font-family:var(--mono);font-size:10.5px;color:var(--faint);font-variant-numeric:tabular-nums}
-/* declared but unused: visible as a slot, clearly not yet clickable.
-   Named "unused" rather than "empty" because .empty is already the no-results
-   panel further down, and its 64px padding would inflate every row here. */
-.src-row.unused{cursor:default;opacity:.4}
-.src-row.unused:hover{background:none;border-color:transparent}
-.src-row:hover{background:var(--hover)}
-.src-row:hover .nm{color:var(--text)}
-.src-row[aria-pressed="true"]{background:var(--accent);border-color:var(--accent)}
-.src-row[aria-pressed="true"] .nm,
-.src-row[aria-pressed="true"] .ct{color:var(--on-accent)}
-.src-row[aria-pressed="true"] .code{color:var(--on-accent);border-color:var(--on-accent);opacity:.55}
+.src-tab .ct{
+  font-family:var(--mono);font-size:10px;color:var(--faint);
+  font-variant-numeric:tabular-nums;transition:color .15s;
+}
+.src-tab:hover{color:var(--text)}
+.src-tab[aria-selected="true"]{color:var(--text);border-bottom-color:var(--accent)}
+.src-tab[aria-selected="true"] .ct{color:var(--muted)}
+/* declared but still empty: visible as a slot, clearly not yet somewhere to go */
+.src-tab.unused{opacity:.38;cursor:default}
+.src-tab.unused:hover{color:var(--muted)}
 
 .chips{display:flex;flex-wrap:wrap;gap:5px}
 .chip{
@@ -286,7 +290,7 @@ select.sort{
 #clearAll:hover{color:var(--accent)}
 
 /* ── results ────────────────────────────────── */
-.results{padding:6px 28px 80px;min-height:60vh}
+.results{padding:6px 28px 80px;min-height:60vh;min-width:0}
 .resbar{
   display:flex;align-items:baseline;gap:10px;padding:14px 2px 10px;
   border-bottom:1px solid var(--line-soft);margin-bottom:4px;
@@ -560,7 +564,8 @@ dl.facts dd a:hover{border-bottom-color:var(--accent)}
 /* coarse pointers get larger hit targets */
 @media (pointer:coarse){
   .chip{padding:7px 11px;font-size:11.5px}
-  .src-row,.pill-row{padding-top:10px;padding-bottom:10px}
+  .pill-row{padding-top:10px;padding-bottom:10px}
+  .src-tab{padding-top:9px;padding-bottom:11px}
   .icon-btn{width:38px;height:38px}
 }
 
@@ -711,11 +716,6 @@ dl.facts dd a:hover{border-bottom-color:var(--accent)}
       <span class="ttl">Filters</span>
       <button class="btn" id="railDone">Show results</button>
     </div>
-    <details class="grp" data-grp="source" open>
-      <summary><span class="lbl">Source</span><span class="badge"></span>
-        <svg class="chev" viewBox="0 0 24 24"><path d="M6 9.5l6 6 6-6"/></svg></summary>
-      <div class="grp-bd"><div class="sources" id="sources"></div></div>
-    </details>
     <details class="grp" data-grp="pillar" open>
       <summary><span class="lbl">Pillar</span><span class="badge"></span>
         <svg class="chev" viewBox="0 0 24 24"><path d="M6 9.5l6 6 6-6"/></svg></summary>
@@ -755,6 +755,10 @@ dl.facts dd a:hover{border-bottom-color:var(--accent)}
   </aside>
 
   <main class="results">
+    <!-- Source lives here rather than in the filter rail: an asset has exactly one,
+         and these read as sections of the library, not as facets to combine. Tabs
+         say "one at a time" on sight, which a checkbox list never will. -->
+    <div class="srctabs" id="srctabs" role="tablist" aria-label="Source"></div>
     <div class="resbar"><span class="n" id="count">—</span><span class="lbl" id="countLbl">assets</span></div>
     <div id="list"></div>
   </main>
@@ -8242,25 +8246,24 @@ function renderSources(){
   const counts = {};
   for(const a of assets){ const s = srcOf(a); if(s) counts[s] = (counts[s]||0)+1; }
   const known = SOURCES.map(([c])=>c);
-  // Every declared source is listed, empty or not, so the rail doubles as the
-  // catalogue's vocabulary: you can see a slot exists before anything fills it.
+  // Every declared source gets a tab, empty or not, so the strip stays the
+  // catalogue's full vocabulary: you can see a slot exists before anything fills it.
   // Anything with a count but no declaration still gets appended.
   const codes = [
     ...known,
     ...Object.keys(counts).filter(c => !known.includes(c)).sort(),
   ];
-  $('#sources').innerHTML = codes.map(c=>{
-    const n = counts[c] || 0;
-    // disabled, not just dimmed: filtering to a source with nothing in it would
-    // clear the grid and read as a bug
-    return `
-    <button class="src-row${n ? '' : ' unused'}" data-src="${esc(c)}"
-            aria-pressed="${state.source.has(c)}"${n ? '' : ' disabled'}>
-      <span class="code">${esc(c)}</span>
-      <span class="nm">${esc(SRC_NAME[c] || c)}</span>
-      <span class="ct">${n}</span>
+  // "All" is what makes the strip read as one-at-a-time: a tab row without a reset
+  // leaves you with no way back, which is what pushed people to click a second one.
+  const tab = (code, label, n, on) => `
+    <button class="src-tab${n === 0 ? ' unused' : ''}" role="tab" data-src="${esc(code)}"
+            aria-selected="${on}"${n === 0 ? ' disabled' : ''}>
+      <span class="nm">${esc(label)}</span><span class="ct">${n}</span>
     </button>`;
-  }).join('');
+
+  $('#srctabs').innerHTML =
+    tab('', 'All', assets.length, state.source.size === 0) +
+    codes.map(c => tab(c, SRC_NAME[c] || c, counts[c] || 0, state.source.has(c))).join('');
 }
 
 function renderRail(){
@@ -8584,9 +8587,15 @@ function toggleTheme(){
 
 document.addEventListener('click', e => {
   if(e.target.closest('#themeBtn')){ toggleTheme(); return; }
-  const s = e.target.closest('.src-row');
-  if(s){ const v=s.dataset.src; state.source.has(v)?state.source.delete(v):state.source.add(v);
-         renderRail(); renderList(); return; }
+  const s = e.target.closest('.src-tab');
+  if(s){
+    // Single-select: picking a source replaces the current one rather than adding
+    // to it. Clicking the active tab, or All, goes back to everything.
+    const v = s.dataset.src;
+    state.source.clear();
+    if(v && !s.matches('[aria-selected="true"]')) state.source.add(v);
+    renderRail(); renderList(); return;
+  }
   const p = e.target.closest('.pill-row');
   if(p){ const v=p.dataset.pillar; state.pillar.has(v)?state.pillar.delete(v):state.pillar.add(v);
          renderRail(); renderList(); return; }
@@ -8641,6 +8650,17 @@ function openRail(open){
   document.body.style.overflow = open ? 'hidden' : '';
 }
 addEventListener('resize', syncBar);
+
+/* Listing every source makes the strip wider than the column, and its scrollbar is
+   hidden. A trackpad can swipe sideways but a plain mouse only has a vertical wheel,
+   which would leave the last few tabs unreachable. Translate one to the other. */
+$('#srctabs').addEventListener('wheel', e => {
+  const el = e.currentTarget;
+  if(el.scrollWidth <= el.clientWidth) return;           // nothing to scroll
+  if(Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;   // already a sideways gesture
+  e.preventDefault();
+  el.scrollLeft += e.deltaY;
+}, {passive:false});
 
 /* ── splash ─────────────────────────────────────
    Comes down when init finishes, but never before MIN_MS, so a warm cache gets a
