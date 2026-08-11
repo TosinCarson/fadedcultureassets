@@ -103,8 +103,6 @@ header{
 }
 .brand h1 em{font-style:normal;color:inherit;font-weight:inherit}
 .hdr-right{margin-left:auto;display:flex;align-items:center;gap:14px}
-.tally{font-size:11px;color:var(--faint);letter-spacing:.04em;text-align:right}
-.tally b{color:var(--muted);font-weight:500;font-variant-numeric:tabular-nums}
 .btn{
   background:var(--accent);border:1px solid var(--accent);color:var(--on-accent);
   padding:9px 17px;border-radius:2px;cursor:pointer;font-size:12px;
@@ -162,6 +160,9 @@ select.sort{
 
 /* list / grid switch */
 .seg{display:flex;border:1px solid var(--line);border-radius:2px;overflow:hidden;flex:none}
+/* pushed to the far end of the bar: the search field is capped at 640px, so the
+   leftover space collects here instead of trailing off after the controls */
+#viewSeg{margin-left:auto}
 .seg-btn{
   background:transparent;border:none;padding:0 11px;height:38px;
   display:grid;place-items:center;cursor:pointer;color:var(--faint);
@@ -201,6 +202,10 @@ select.sort{
   stroke-linecap:round;stroke-linejoin:round;transition:transform .2s;
 }
 .grp[open] .chev{transform:rotate(180deg)}
+/* pinned open on desktop: no chevron, nothing to click, label reads as a heading */
+.grp.pinned summary{cursor:default;pointer-events:none}
+.grp.pinned .chev{display:none}
+.grp.pinned summary .lbl{color:var(--muted)}
 /* count of active filters, so a collapsed group still declares itself */
 .grp .badge{
   display:none;place-items:center;font-family:var(--mono);font-size:9px;
@@ -290,6 +295,11 @@ select.sort{
 
 /* ── results ────────────────────────────────── */
 .results{padding:6px 28px 80px;min-height:60vh;min-width:0}
+/* Picking a different source swaps the entire grid in one go, which reads as a jump.
+   A short fade and rise on the container makes the change legible. Deliberately on
+   the container and not on each card: staggering 364 cards would jank on a phone. */
+#list.swap{animation:listIn .26s cubic-bezier(.2,.7,.2,1)}
+@keyframes listIn{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
 .resbar{
   display:flex;align-items:baseline;gap:10px;padding:14px 2px 10px;
   border-bottom:1px solid var(--line-soft);margin-bottom:4px;
@@ -514,10 +524,13 @@ dl.facts dd a:hover{border-bottom-color:var(--accent)}
 @media (max-width:880px){
   header{padding:16px 18px 13px;gap:14px}
   .brand h1{font-size:23px}
-  .tally{font-size:10.5px}
   .searchbar{padding:12px 18px;gap:10px;flex-wrap:wrap}
   .search-wrap{max-width:none;flex:1 1 100%;order:-1} /* search on its own line, above the controls */
-  #railToggle{display:grid}
+  /* auto margin here and nowhere else on the row, so the hamburger collects all the
+     free space and lands hard right against the title. .hdr-right has to give up its
+     own auto margin or flexbox splits the gap between the two. */
+  #railToggle{display:grid;margin-left:auto}
+  .hdr-right{margin-left:0}
   .shell{grid-template-columns:1fr}
   /* A left drawer rather than a full-screen takeover, so the grid stays visible
      behind it and the scrim reads as "tap here to dismiss". Slides on transform,
@@ -552,8 +565,9 @@ dl.facts dd a:hover{border-bottom-color:var(--accent)}
 @media (max-width:560px){
   header{padding:14px 15px 12px;gap:12px}
   .brand h1{font-size:21px}
+  /* the tally used to push these apart; Add asset takes that job now */
   .hdr-right{gap:9px;width:100%;margin-left:0}
-  .tally{order:3;margin-left:auto;text-align:right}
+  #addBtn{margin-left:auto}
   .searchbar{padding:11px 15px}
   .results{padding:6px 15px 72px}
   .rail{padding:0 15px 90px}
@@ -681,8 +695,13 @@ dl.facts dd a:hover{border-bottom-color:var(--accent)}
     <div class="eyebrow">Faded Culture</div>
     <h1>Asset <em>Library</em></h1>
   </div>
+  <!-- a direct child of the header, not of .hdr-right, so on a phone it can sit on
+       the title row while the theme and Add asset buttons wrap to the row below -->
+  <button class="icon-btn" id="railToggle" aria-label="Open filters" aria-expanded="false"
+          aria-controls="rail">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+  </button>
   <div class="hdr-right">
-    <div class="tally"><b id="tallyN">—</b> assets<br><span id="tallyHold">—</span></div>
     <button class="icon-btn" id="themeBtn" title="Switch theme" aria-label="Switch theme">
       <svg class="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8.2 8.2 0 0 1 9.5 4a8.4 8.4 0 1 0 10.5 10.5z"/></svg>
       <svg class="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.4v2.2M12 19.4v2.2M2.4 12h2.2M19.4 12h2.2M5.2 5.2l1.6 1.6M17.2 17.2l1.6 1.6M18.8 5.2l-1.6 1.6M6.8 17.2l-1.6 1.6"/></svg>
@@ -695,10 +714,6 @@ dl.facts dd a:hover{border-bottom-color:var(--accent)}
 </header>
 
 <div class="searchbar">
-  <button class="icon-btn" id="railToggle" aria-label="Open filters" aria-expanded="false"
-          aria-controls="rail">
-    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
-  </button>
   <div class="search-wrap">
     <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
     <input id="q" type="search" placeholder="Search titles, notes, sources, categories, locations…" autocomplete="off">
@@ -8236,16 +8251,32 @@ const GRP_KEY = 'fc-rail-groups';
 function loadGroups(){
   try{ return JSON.parse(localStorage.getItem(GRP_KEY)) || {}; }catch(e){ return {}; }
 }
+/* Source is the primary navigation, so on desktop it is pinned open: there is room
+   for it and collapsing it hides the main way around the library. The drawer on a
+   phone is tight, so it stays collapsible there. Enforced in JS because `open` is an
+   attribute and CSS cannot force a <details> open. */
+const SOURCE_PINNED = () => innerWidth > 880;
+function pinSourceGroup(){
+  const d = document.querySelector('.grp[data-grp="source"]');
+  if(!d) return;
+  const pinned = SOURCE_PINNED();
+  d.classList.toggle('pinned', pinned);
+  if(pinned && !d.open) d.open = true;
+}
+
 function initGroups(){
   const saved = loadGroups();
   document.querySelectorAll('.grp').forEach(d => {
     if(d.dataset.grp in saved) d.open = !!saved[d.dataset.grp];
     d.addEventListener('toggle', () => {
+      // a pinned group that somehow closes springs straight back
+      if(d.dataset.grp === 'source' && SOURCE_PINNED() && !d.open){ d.open = true; return; }
       const s = loadGroups();
       s[d.dataset.grp] = d.open;
       try{ localStorage.setItem(GRP_KEY, JSON.stringify(s)); }catch(e){}
     });
   });
+  pinSourceGroup();
 }
 function renderBadges(){
   document.querySelectorAll('.grp').forEach(d => {
@@ -8328,9 +8359,6 @@ function renderRail(){
   }).join('');
 
   renderBadges();
-  $('#tallyN').textContent = assets.length;
-  const hold = assets.filter(FLAGS.hold.test).length;
-  $('#tallyHold').textContent = hold ? hold+' need permission' : 'all cleared';
 }
 
 /* ── thumbnails ─────────────────────────────────
@@ -8400,6 +8428,17 @@ function cardHTML(a){
     <span class="meta">${joinMeta(meta)}</span>
     ${tagsOf(a).length?`<span class="tags">${tagsOf(a).join('')}</span>`:''}
   </button>`;
+}
+
+/* Replays the swap animation. Removing the class and forcing a reflow before adding
+   it back is the only reliable way to restart a CSS animation already on an element.
+   Called from the source and pillar handlers, not from renderList, so it does not
+   fire on every keystroke while searching. */
+function animateList(){
+  const el = $('#list');
+  el.classList.remove('swap');
+  void el.offsetWidth;
+  el.classList.add('swap');
 }
 
 function renderList(){
@@ -8628,7 +8667,7 @@ document.addEventListener('click', e => {
     const v = s.dataset.src;
     state.source.clear();
     if(v && !s.matches('[aria-pressed="true"]')) state.source.add(v);
-    renderRail(); renderList(); return;
+    renderRail(); renderList(); animateList(); return;
   }
   const p = e.target.closest('.src-tab');
   if(p){
@@ -8636,7 +8675,7 @@ document.addEventListener('click', e => {
     const v = p.dataset.pillar;
     state.pillar.clear();
     if(v && !p.matches('[aria-selected="true"]')) state.pillar.add(v);
-    renderRail(); renderList(); return;
+    renderRail(); renderList(); animateList(); return;
   }
   const c = e.target.closest('.chip');
   if(c){
@@ -8689,6 +8728,8 @@ function syncBar(){
   // the sheet only exists below 880px — leaving it "open" past that
   // would strand the body scroll lock
   if(innerWidth > 880 && $('#rail').classList.contains('open')) openRail(false);
+  // crossing the breakpoint changes whether Source is pinned
+  pinSourceGroup();
 }
 function openRail(open){
   $('#rail').classList.toggle('open', open);
