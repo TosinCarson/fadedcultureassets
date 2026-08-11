@@ -8,6 +8,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
 <meta name="color-scheme" content="dark light">
+<!-- Tints the mobile browser's address bar to match the canvas. Without it the bar
+     stays the browser's own grey and sits against the app as a visible seam.
+     Kept in sync by toggleTheme, so it follows the app's theme, not the OS. -->
+<meta name="theme-color" content="#010101">
 <script>
 /* Applied before first paint so a stored choice never flashes the other theme.
    No stored value = dark, which is what the bare :root already paints, so there
@@ -32,11 +36,11 @@
    block further down; change one, change both.       */
 :root{
   color-scheme:dark;
-  --canvas:#0B0B0C; --surface:#141416; --raised:#1B1B1E;
+  --canvas:#010101; --surface:#141416; --raised:#1B1B1E;
   --line:#2B2B30; --line-soft:#1F1F23;
   --text:#EDEBE8; --muted:#8A8886; --faint:#5C5A58;
   --accent:#EDEBE8; --accent-hover:#FFFFFF; --accent-soft:#6A6865;
-  --accent-glow:rgba(237,235,232,.08); --on-accent:#0B0B0C;
+  --accent-glow:rgba(237,235,232,.08); --on-accent:#010101;
   --scrim:rgba(0,0,0,.64);
   --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,monospace;
   --rail:264px;
@@ -53,11 +57,11 @@
 }
 :root[data-theme="dark"]{
   color-scheme:dark;
-  --canvas:#0B0B0C; --surface:#141416; --raised:#1B1B1E;
+  --canvas:#010101; --surface:#141416; --raised:#1B1B1E;
   --line:#2B2B30; --line-soft:#1F1F23;
   --text:#EDEBE8; --muted:#8A8886; --faint:#5C5A58;
   --accent:#EDEBE8; --accent-hover:#FFFFFF; --accent-soft:#6A6865;
-  --accent-glow:rgba(237,235,232,.08); --on-accent:#0B0B0C;
+  --accent-glow:rgba(237,235,232,.08); --on-accent:#010101;
   --scrim:rgba(0,0,0,.64);
 }
 *{box-sizing:border-box;margin:0;padding:0}
@@ -555,7 +559,7 @@ dl.facts dd a:hover{border-bottom-color:var(--accent)}
 #splash{
   position:fixed;inset:0;z-index:200;
   display:grid;place-items:center;
-  background:#0B0B0D;color:#fff;
+  background:#010101;color:#fff;
   transition:opacity .5s ease,visibility .5s;
 }
 #splash.done{opacity:0;visibility:hidden;pointer-events:none}
@@ -8559,6 +8563,10 @@ function toggleTheme(){
   const next = currentTheme()==='dark' ? 'light' : 'dark';
   document.documentElement.setAttribute('data-theme', next);
   try{ localStorage.setItem('fc-theme', next); }catch(e){}
+  // read the token rather than repeating the hex, so this cannot drift from :root
+  const tc = document.querySelector('meta[name="theme-color"]');
+  if(tc) tc.setAttribute('content',
+    getComputedStyle(document.documentElement).getPropertyValue('--canvas').trim());
 }
 
 document.addEventListener('click', e => {
