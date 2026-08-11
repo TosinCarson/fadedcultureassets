@@ -74,6 +74,9 @@
   --scrim:rgba(0,0,0,.64);
 }
 *{box-sizing:border-box;margin:0;padding:0}
+/* No italics anywhere. These tags default to italic in every browser, so a stray
+   <em> in a note or a future bit of markup would slip one in unnoticed. */
+em,i,cite,dfn,var,address,q,blockquote{font-style:normal}
 html,body{height:100%}
 body{
   background:var(--canvas);color:var(--text);
@@ -449,7 +452,8 @@ dl.facts dt{
   padding:11px 0;border-bottom:1px solid var(--line-soft);
 }
 dl.facts dd{padding:11px 0;border-bottom:1px solid var(--line-soft);font-size:13px;word-break:break-word}
-dl.facts dd.none{color:var(--faint);font-style:italic}
+/* the faint colour already marks these as absent; no italic */
+dl.facts dd.none{color:var(--faint)}
 dl.facts dd a{color:var(--accent);text-decoration:none;border-bottom:1px solid var(--accent-glow)}
 dl.facts dd a:hover{border-bottom-color:var(--accent)}
 .notebox{
@@ -8164,8 +8168,8 @@ const FIELDS = {funnel:'f-funnel', rights:'f-rights', status:'f-status', type:'f
    the order shown in the rail. */
 const SOURCES = [
   ['YT','YouTube'], ['FI','Frame.io'], ['RL','Reel'], ['EB','Ebook'],
-  ['PD','PDF'], ['SD','Slide deck'], ['AP','Apparel'], ['GR','Grooming'],
-  ['PH','Photo'], ['LG','Logos'], ['DS','Design'], ['FR','Drive folder'],
+  ['PD','PDF'], ['SD','Slide deck'], ['TS','Testimonials'], ['AP','Apparel'],
+  ['GR','Grooming'], ['PH','Photo'], ['LG','Logos'], ['DS','Design'],
 ];
 const SRC_NAME = Object.fromEntries(SOURCES);
 const srcOf = a => String(a.id||'').split('-')[0] || '';
