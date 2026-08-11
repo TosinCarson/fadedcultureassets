@@ -8358,6 +8358,21 @@ function renderRail(){
       ${f.label}<span class="n">${n}</span></button>`;
   }).join('');
 
+  /* A group with nothing in it is an empty promise: it advertises a way to narrow
+     the library that does not exist yet. Hide those, so Funnel use disappears until
+     something uses it and Rights appears the day the first cleared clip lands.
+     A group holding an active filter is never hidden, or the filter would still be
+     applied with no way to see or clear it. */
+  document.querySelectorAll('.grp[data-grp]').forEach(d => {
+    const field = d.dataset.grp;
+    if(field === 'source') return;              // pinned nav, always shown
+    const body = d.querySelector('.grp-bd');
+    if(!body) return;
+    const hasValues = body.children.length > 0 && body.firstElementChild.children.length > 0;
+    const inUse = state[field] && state[field].size > 0;
+    d.hidden = !hasValues && !inUse;
+  });
+
   renderBadges();
 }
 
@@ -8667,7 +8682,15 @@ document.addEventListener('click', e => {
     const v = s.dataset.src;
     state.source.clear();
     if(v && !s.matches('[aria-pressed="true"]')) state.source.add(v);
-    renderRail(); renderList(); animateList(); return;
+    renderRail(); renderList(); animateList();
+    /* In drawer mode, picking a source is a complete decision, so get out of the way
+       and show the result. Filtered first, so the grid is already correct when it is
+       revealed. Only source does this: the chips below are multi-select, and closing
+       on every tap would mean reopening the drawer between each one.
+       Keyed off .open rather than a width check because the class only ever exists
+       in drawer mode, so desktop cannot trip it. */
+    if($('#rail').classList.contains('open')) openRail(false);
+    return;
   }
   const p = e.target.closest('.src-tab');
   if(p){
