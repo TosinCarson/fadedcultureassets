@@ -11,7 +11,7 @@
 <!-- Tints the mobile browser's address bar to match the canvas. Without it the bar
      stays the browser's own grey and sits against the app as a visible seam.
      Kept in sync by toggleTheme, so it follows the app's theme, not the OS. -->
-<meta name="theme-color" content="#010101">
+<meta name="theme-color" content="#0B0B0C">
 <script>
 /* Applied before first paint so a stored choice never flashes the other theme.
    No stored value = dark, which is what the bare :root already paints, so there
@@ -36,11 +36,15 @@
    block further down; change one, change both.       */
 :root{
   color-scheme:dark;
-  --canvas:#010101; --surface:#141416; --raised:#1B1B1E;
+  /* panels sit flush with the canvas; borders do the separating, not fills */
+  --canvas:#0B0B0C; --surface:#0B0B0C; --raised:#0B0B0C;
+  /* surface used to double as the row hover tint. Now that it matches the canvas
+     it cannot, so hover gets its own value or rows stop responding to the mouse. */
+  --hover:#141416;
   --line:#2B2B30; --line-soft:#1F1F23;
   --text:#EDEBE8; --muted:#8A8886; --faint:#5C5A58;
   --accent:#EDEBE8; --accent-hover:#FFFFFF; --accent-soft:#6A6865;
-  --accent-glow:rgba(237,235,232,.08); --on-accent:#010101;
+  --accent-glow:rgba(237,235,232,.08); --on-accent:#0B0B0C;
   --scrim:rgba(0,0,0,.64);
   --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,monospace;
   --rail:264px;
@@ -49,6 +53,7 @@
 :root[data-theme="light"]{
   color-scheme:light;
   --canvas:#FFFFFF; --surface:#F7F6F5; --raised:#F0EFED;
+  --hover:#F7F6F5;
   --line:#DEDCD8; --line-soft:#EBE9E6;
   --text:#16161A; --muted:#5D5C5A; --faint:#918F8B;
   --accent:#16161A; --accent-hover:#33323A; --accent-soft:#8B8985;
@@ -57,11 +62,15 @@
 }
 :root[data-theme="dark"]{
   color-scheme:dark;
-  --canvas:#010101; --surface:#141416; --raised:#1B1B1E;
+  /* panels sit flush with the canvas; borders do the separating, not fills */
+  --canvas:#0B0B0C; --surface:#0B0B0C; --raised:#0B0B0C;
+  /* surface used to double as the row hover tint. Now that it matches the canvas
+     it cannot, so hover gets its own value or rows stop responding to the mouse. */
+  --hover:#141416;
   --line:#2B2B30; --line-soft:#1F1F23;
   --text:#EDEBE8; --muted:#8A8886; --faint:#5C5A58;
   --accent:#EDEBE8; --accent-hover:#FFFFFF; --accent-soft:#6A6865;
-  --accent-glow:rgba(237,235,232,.08); --on-accent:#010101;
+  --accent-glow:rgba(237,235,232,.08); --on-accent:#0B0B0C;
   --scrim:rgba(0,0,0,.64);
 }
 *{box-sizing:border-box;margin:0;padding:0}
@@ -245,7 +254,7 @@ select.sort{
    panel further down, and its 64px padding would inflate every row here. */
 .src-row.unused{cursor:default;opacity:.4}
 .src-row.unused:hover{background:none;border-color:transparent}
-.src-row:hover{background:var(--surface)}
+.src-row:hover{background:var(--hover)}
 .src-row:hover .nm{color:var(--text)}
 .src-row[aria-pressed="true"]{background:var(--accent);border-color:var(--accent)}
 .src-row[aria-pressed="true"] .nm,
@@ -288,7 +297,7 @@ select.sort{
   background:none;border:none;border-bottom:1px solid var(--line-soft);
   text-align:left;cursor:pointer;transition:background .13s;
 }
-.row:hover{background:var(--surface)}
+.row:hover{background:var(--hover)}
 .row .tick{
   align-self:stretch;background:var(--line-soft);border-radius:2px;
   transition:background .15s;
@@ -559,7 +568,7 @@ dl.facts dd a:hover{border-bottom-color:var(--accent)}
 #splash{
   position:fixed;inset:0;z-index:200;
   display:grid;place-items:center;
-  background:#010101;color:#fff;
+  background:#0B0B0D;color:#fff;
   transition:opacity .5s ease,visibility .5s;
 }
 #splash.done{opacity:0;visibility:hidden;pointer-events:none}
