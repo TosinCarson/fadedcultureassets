@@ -677,7 +677,7 @@ dl.facts dd a:hover{border-bottom-color:var(--accent)}
 }
 </style>
 
-<div class="wm-corner" aria-hidden="true">PREVIEW — Designed by Tosin</div>
+<div class="wm-corner" aria-hidden="true">PREVIEW — Built by Tosin</div>
 
 <div id="splash" role="status" aria-label="Loading">
   <div class="splash-inner">
@@ -8320,8 +8320,15 @@ function renderSources(){
 /* Pillar tabs above the grid. Same one-at-a-time rule as source: an asset has a
    single pillar, so combining them was never meaningful. */
 function renderPillarTabs(){
+  /* Counts are scoped to the selected source, not the whole library. Otherwise a tab
+     advertises 305 while the source you are in holds none of them, and clicking it
+     lands on "Nothing matches that". Scoped counts make an impossible combination
+     visibly unavailable instead of a dead end you discover by falling into it. */
+  const inScope = state.source.size
+    ? assets.filter(a => state.source.has(srcOf(a)))
+    : assets;
   const counts = {};
-  for(const a of assets){ const p = (a.pillar || '').trim(); if(p) counts[p] = (counts[p]||0)+1; }
+  for(const a of inScope){ const p = (a.pillar || '').trim(); if(p) counts[p] = (counts[p]||0)+1; }
   const names = [
     ...PILLARS,
     ...Object.keys(counts).filter(p => !PILLARS.includes(p)).sort(),
@@ -8332,7 +8339,7 @@ function renderPillarTabs(){
       <span class="nm">${esc(label)}</span><span class="ct">${n}</span>
     </button>`;
 
-  const untagged = assets.filter(a => !(a.pillar || '').trim()).length;
+  const untagged = inScope.filter(a => !(a.pillar || '').trim()).length;
   // No All tab here: "All sources" in the rail already covers the reset, and
   // clicking the selected pillar again clears it.
   $('#pilltabs').innerHTML =
@@ -8687,6 +8694,22 @@ document.addEventListener('click', e => {
     const v = s.dataset.src;
     state.source.clear();
     if(v && !s.matches('[aria-pressed="true"]')) state.source.add(v);
+
+    /* Scoped tab counts stop you picking an impossible pair, but a pillar chosen
+       BEFORE the source can still be stranded: pick The Craft, then Apparel, and the
+       two intersect to nothing. Drop the pillar only when it would empty the view, so
+       a pairing that still returns something (Ebook plus The Classroom) survives. */
+    if(state.pillar.size){
+      const scoped = state.source.size
+        ? assets.filter(a => state.source.has(srcOf(a)))
+        : assets;
+      const stillMatches = scoped.some(a => {
+        const p = (a.pillar || '').trim();
+        return state.pillar.has(p) || (state.pillar.has('__untagged') && !p);
+      });
+      if(!stillMatches) state.pillar.clear();
+    }
+
     renderRail(); renderList(); animateList();
     /* In drawer mode, picking a source is a complete decision, so get out of the way
        and show the result. Filtered first, so the grid is already correct when it is
