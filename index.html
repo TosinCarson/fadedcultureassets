@@ -8282,8 +8282,13 @@ function renderBadges(){
   document.querySelectorAll('.grp').forEach(d => {
     const n = state[d.dataset.grp] ? state[d.dataset.grp].size : 0;
     const b = d.querySelector('.badge');
-    b.textContent = n || '';
-    b.classList.toggle('on', n > 0);
+    // The badge exists so a COLLAPSED group can still say it is filtering something.
+    // A pinned group is always open and its selection is highlighted right below the
+    // heading, so the count only repeats what is already on screen, and a lone digit
+    // beside a heading reads as an unread notification rather than a filter count.
+    const pinned = d.classList.contains('pinned');
+    b.textContent = n && !pinned ? n : '';
+    b.classList.toggle('on', n > 0 && !pinned);
   });
 }
 
